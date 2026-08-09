@@ -63,17 +63,9 @@ T3_HEADER = ["目录", "情况", "建议"]
 # 扫描
 # --------------------------------------------------------------------------
 def find_skill_md(skill_dir: Path) -> Path | None:
-    """在 skill 目录下找SKILL.md，支持多一层嵌套（dir/dir/SKILL.md）。"""
+    """只接受 `<skill>/SKILL.md`，避免双层目录被静默当成正常结构。"""
     direct = skill_dir / "SKILL.md"
-    if direct.is_file():
-        return direct
-    for sub in sorted(p for p in skill_dir.iterdir() if p.is_dir()):
-        if sub.name == ".git":
-            continue
-        nested = sub / "SKILL.md"
-        if nested.is_file():
-            return nested
-    return None
+    return direct if direct.is_file() else None
 
 
 def latest_mtime(skill_dir: Path) -> _dt.date:
@@ -157,7 +149,7 @@ def scan(root: Path) -> tuple[list[Entry], list[Entry], list[tuple[str, str, str
     unmanaged: list[tuple[str, str, str]] = []
 
     for child in sorted(p for p in root.iterdir() if p.is_dir()):
-        if child.name.startswith((".", "_")) or child.name in {"dist", "node_modules"}:
+        if child.name.startswith((".", "_")) or child.name in {"dist", "node_modules", "scripts"}:
             continue
         skill_md = find_skill_md(child)
         if skill_md is None:

@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 *.pyo
+bboxes.json
+manifest*.json
+output/

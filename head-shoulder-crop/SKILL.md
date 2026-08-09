@@ -1,10 +1,6 @@
 ---
 name: head-shoulder-crop
-description: |
-  批量从企业微信文档表格中下载人像图片，使用 OpenCV 人脸检测进行头肩裁剪（正方形），
-  并按指定列命名输出。同时支持本地文件夹直接裁剪。适用于证件照预处理、人物肖像数据集准备等场景。
-  Use this skill when the user shares a WeCom sheet or a local folder containing portrait images
-  and wants to batch crop them to head-and-shoulder shots.
+description: 批量从企业微信文档表格中下载人像图片，使用 OpenCV 人脸检测进行正方形头肩裁剪并按指定列命名输出，同时支持本地文件夹直接裁剪。适用于证件照预处理、人物肖像数据集准备等场景；当用户提供企业微信表格或本地人像文件夹，并要求批量裁剪头肩照时使用此 skill。
 ---
 
 # 头肩裁剪 — 从企业微信文档到方形头像

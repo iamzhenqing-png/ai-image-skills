@@ -15,11 +15,11 @@
 
 1. 先打开 `_registry/工作流台账.md` 的**表二**，确认要做的事情**没有**现成原子 skill 能干。
    宁可扩展已有 skill，也不要造第二个功能重叠的。
-2. 用官方 `skill-creator` 的初始化脚本建目录，不要手捏：
+2. 用官方 `skill-creator` 的初始化脚本直接在独立仓库中建目录，不要手捏：
    ```bash
-   python3 "/Applications/CodeBuddy CN.app/Contents/Resources/app/extensions/genie/out/extension/builtin/skill-creator/scripts/init_skill.py" <skill-name>
+   python3 "/Applications/CodeBuddy CN.app/Contents/Resources/app/extensions/genie/out/extension/builtin/skill-creator/scripts/init_skill.py" <skill-name> --path "$HOME/dev/ai-image-skills"
    ```
-   不加 `--path` 时默认建到 `~/.codebuddy/skills/`。生成的示例目录里没用到的（`assets/` 等）删掉。
+   初始化后运行 `scripts/link.sh`；生成的示例目录里没用到的（`assets/` 等）删掉。上述应用内脚本路径仅适用于当前 macOS CodeBuddy CN 安装位置，版本变化后应先重新查找。
 
 ## 命名规则
 

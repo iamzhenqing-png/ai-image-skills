@@ -80,7 +80,7 @@ def chroma_key(
     from PIL import Image
 
     img = Image.open(image_path).convert("RGBA")
-    arr = np.asarray(img).astype(np.int16)
+    arr = np.asarray(img).astype(np.int32)
     r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
 
     kr, kg, kb = key_color

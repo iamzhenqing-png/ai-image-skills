@@ -9,7 +9,11 @@ description: 批量对文件夹中的图片进行 AI 风格迁移（内置生图
 
 ## ⚙️ 前置准备：配置 API
 
-本 Skill **内置**了生图 API 调用引擎（`scripts/api_image.py`），**只需下载本 skill 即可使用，无需再单独安装 api-image / 多模态内容生成 skill**。首次使用需要先配置 API 信息。
+本 Skill **内置**了生图 API 调用引擎（`scripts/api_image.py`），无需再单独安装 api-image / 多模态内容生成 skill。首次使用先安装 Python 依赖并配置 API 信息：
+
+```bash
+python3 -m pip install requests Pillow
+```
 
 请在 CodeBuddy 工作区的 `TOOLS.md` 中添加以下内容（或让智能体帮你添加）：
 
@@ -21,10 +25,10 @@ description: 批量对文件夹中的图片进行 AI 风格迁移（内置生图
 - API Type: gemini  # 可选值: gemini / google / openai / venus
 ```
 
-配置完成后，可先运行检查命令验证（脚本路径为本 skill 目录下的 `scripts/api_image.py`）：
+配置完成后，在保存该 `TOOLS.md` 的 CodeBuddy 工作区根目录运行检查命令（将脚本路径替换为本 skill 的真实绝对路径）：
 
 ```bash
-python3 scripts/api_image.py check
+python3 /absolute/path/to/batch-style-transfer/scripts/api_image.py check
 ```
 
 > 💡 **建议**：风格迁移任务优先使用 `API Type: gemini` 或 `venus`（公司内部中转），二者均原生支持参考图输入；其他模型只能以文字描述方式生成，效果会打折扣。
@@ -195,7 +199,7 @@ source_images/              ← 源图文件夹
 - **API 调用引擎**: `scripts/api_image.py` — 内置，支持 Gemini / OpenAI / Venus 等协议，无需额外安装其他 skill
 - **首次使用**: 需要配置 API Key 和模型参数（智能体会引导完成）
 
-> 本 skill 为**自包含（self-contained）**设计：所有代码依赖均在 `scripts/` 目录下，其他使用者只需下载/安装本 skill 一个目录即可运行，无需再单独安装 api-image（多模态内容生成）skill。
+> 本 skill 为**代码自包含（self-contained）**设计：API 调用代码均在 `scripts/` 目录下，无需再单独安装 api-image（多模态内容生成）skill；Python 环境仍需安装 `requests` 与 `Pillow`。
 
 ## 对外契约（编排链依赖，改动需通知）
 
@@ -206,8 +210,7 @@ source_images/              ← 源图文件夹
 - 硬停点：无，全程无人值守；单张调用生图 API 失败仅计入失败计数，不中断整体批次
 - 幂等性：**不跳过已有产物**——重复运行会对同名文件重新调用生图 API 并覆盖，
   会重复消耗 API 额度。只想补跑失败项时，请先把已成功的源图移出源目录
-- 依赖：需在 `TOOLS.md` 配置好`API Image` 的Key/Base URL/Model，否则 API 调用会失败；
-  代码依赖已自包含在 `scripts/` 内，无需另装其他 skill
+- 依赖：Python 包 `requests`、`Pillow`；需在当前工作区 `TOOLS.md` 配置好 `API Image` 的 Key/Base URL/Model，否则 API 调用会失败；无需另装其他 skill
 
 ## 实现细节（随时可改，编排层不依赖）
 

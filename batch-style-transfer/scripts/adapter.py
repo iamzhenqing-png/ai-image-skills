@@ -17,7 +17,6 @@
 """
 
 import json
-import os
 import subprocess
 import sys
 import urllib.request
@@ -69,8 +68,7 @@ class ImageGenerator:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=timeout,
-                cwd=os.path.dirname(self.api_script)
+                timeout=timeout
             )
             
             if result.returncode == 0:

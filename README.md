@@ -22,30 +22,27 @@
 
 ⚠️ **请整套一起装，不要只挑其中几个。**
 工作流会调用原子 skill，少装一个就会跑到一半失败，而系统**不会**自动帮你补装。
+每个 skill 的 `SKILL.md` 必须直接位于该 skill 第一层，不允许出现同名双层目录。
 
 ---
 
-## 二、怎么装（复制给 AI 让它帮你跑就行）
+## 二、怎么装（独立仓库 + 逐个软链接）
 
 ```bash
-cd ~/.codebuddy/skills
-git init -q
-git remote add origin https://github.com/iamzhenqing-png/ai-image-skills.git
-git fetch origin
-git checkout -f -t origin/main
+mkdir -p ~/dev
+git clone https://github.com/iamzhenqing-png/ai-image-skills.git ~/dev/ai-image-skills
+cd ~/dev/ai-image-skills
+chmod +x scripts/*.sh .githooks/*
+git config core.hooksPath .githooks
+./scripts/link.sh
 ```
 
+`link.sh` 会自动发现仓库第一层的所有 `*/SKILL.md`，并为现有的
+`~/.codebuddy/skills`、`~/.agents/skills`、`~/.claude/skills` 逐个建立链接。
+若目标位置已有同名实体目录，脚本会先移入该 skills 目录下的隐藏备份目录
+`.ai-image-skills-backups/`，不会静默删除。第三方 skill 不在本仓库中，不会被 Git 操作影响。
+
 装完**重启一次 CodeBuddy**，然后问它「你现在有哪些 skill」来确认装上了。
-
-关于这几条命令：
-- 装的位置是 `~/.codebuddy/skills/`（user skill，所有项目里都能用）。
-  只想在某一个项目里用，就把 `~/.codebuddy/skills` 换成 `<项目目录>/.codebuddy/skills`。
-- 你原来装的其他 skill **不会**被动到，也不会被上传（都在 `.gitignore` 里排除了）。
-- 用其他 AI 编程工具的话：❓ **我只验证过 CodeBuddy 的目录，别的工具 skills 目录在哪没确认过**，
-  请查你所用工具自己的文档。
-
-> ⚠️ **一条禁令**：装好之后这个目录是 git 仓库，但里面还有很多「不被跟踪」的其他 skill。
-> **永远不要在这里执行 `git clean -fdx`**，那会把它们一起删掉。
 
 ---
 
@@ -64,7 +61,8 @@ git checkout -f -t origin/main
 > Key 只存在你自己的工作区里，**不会**被提交上来（`.gitignore` 已排除 `TOOLS.md`）。
 > 请不要把 Key 贴进任何 skill 目录里的文件。
 
-配完让 AI 跑一次连通性自检：`python3 scripts/api_image.py check`（在 `batch-style-transfer` 目录下）。
+配完后在保存该 `TOOLS.md` 的工作区根目录运行连通性自检：
+`python3 ~/.codebuddy/skills/batch-style-transfer/scripts/api_image.py check`。
 
 `lucky-item-style-transfer` **不用** API Key，它走浏览器操作官方 Gemini，需要你**本人用自己的
 Google 账号手动登录一次**（登录态存在本机，别人代劳不了）。
@@ -94,8 +92,16 @@ Google 账号手动登录一次**（登录态存在本机，别人代劳不了�
 ## 六、怎么更新
 
 ```bash
-cd ~/.codebuddy/skills
+cd ~/dev/ai-image-skills
 git pull
+```
+
+仓库已配置 `post-merge` 和 `post-checkout` hook，拉取或切换版本后会自动运行
+`scripts/link.sh`。如果复制仓库时没有保留本机 Git 配置，可重新执行：
+
+```bash
+git config core.hooksPath .githooks
+./scripts/link.sh
 ```
 
 更新前建议看一眼 `CHANGELOG.md`：里面**只记会影响使用方式的变更**。
@@ -107,7 +113,7 @@ git pull
 
 | 现象 | 先检查 |
 |---|---|
-| AI 说找不到这个 skill | 是不是没装在 `~/.codebuddy/skills/` 下 / 没重启 CodeBuddy / 多套了一层文件夹 |
+| AI 说找不到这个 skill | 运行 `~/dev/ai-image-skills/scripts/link.sh` / 检查链接是否存在 / 重启 CodeBuddy / 检查是否多套了一层文件夹 |
 | 跑到一半报缺少某个模块 | 对应 skill 的「准备环境」一节没执行 |
 | 报 Key 无效 | `TOOLS.md` 里的 Key、Base URL、Model 是否填对 |
 | 结果目录是空的 | 输入目录路径是否写对、里面是否真有支持格式的图片 |

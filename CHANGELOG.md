@@ -22,6 +22,13 @@
 
 <!-- 新的变更加在这行下面，最新的放最上面 -->
 
+## 2026-08-09 · 仓库管理方式调整（契约未变）
+
+- 仓库从平台 skills 运行目录迁移到独立的 `~/dev/ai-image-skills`，通过 `scripts/link.sh` 逐个建立软链接。
+- `batch-image-resize` 与 `head-shoulder-crop` 已改为标准的一层 `SKILL.md` 结构。
+- 六个 skill 的入口命令、输入输出与契约版本均未改变。
+- 使用者首次迁移后需运行 `scripts/link.sh` 并重启 CodeBuddy。
+
 ## 2026-08-04 · 首次发布（全部 skill 契约 v1）
 
 首版，无「变更」可言，这里只说明本次统一做了什么：

@@ -91,9 +91,9 @@ def compute_crop_region(img_w, img_h, face_box,
     return x1, y1, x2, y2
 
 
-def crop_all(chef_json_path="chef_data.json"):
+def crop_all(chef_json_path="chef_data.json", output_dir=OUT):
     """主入口：读取 data JSON，对 raw_images/ 下每张图做头肩裁剪"""
-    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     detector = load_face_detector()
 
     with open(chef_json_path, "r", encoding="utf-8") as f:
@@ -129,19 +129,19 @@ def crop_all(chef_json_path="chef_data.json"):
         x1, y1, x2, y2 = compute_crop_region(w, h, face)
         cropped = img[y1:y2, x1:x2]
 
-        out_path = os.path.join(OUT, f"{safe_name}.jpg")
+        out_path = os.path.join(output_dir, f"{safe_name}.jpg")
         cv2.imwrite(out_path, cropped, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
         success += 1
 
     # 写失败日志
     if failures:
-        with open(os.path.join(OUT, "failures.txt"), "w") as f:
+        with open(os.path.join(output_dir, "failures.txt"), "w") as f:
             for line in failures:
                 f.write(line + "\n")
 
     print(f"裁剪完成: 成功 {success}/{len(entries)}, 失败 {fail}/{len(entries)}")
     if success:
-        print(f"输出目录: {os.path.abspath(OUT)}")
+        print(f"输出目录: {os.path.abspath(output_dir)}")
 
 
 def crop_local_dir(input_dir, output_dir=None, recursive=False):
@@ -236,4 +236,4 @@ if __name__ == "__main__":
     if args.local_dir:
         crop_local_dir(args.local_dir, output_dir=args.out_dir, recursive=args.recursive)
     else:
-        crop_all(chef_json_path=args.json)
+        crop_all(chef_json_path=args.json, output_dir=args.out_dir)

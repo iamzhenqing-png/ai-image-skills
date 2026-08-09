@@ -9,26 +9,43 @@ API Image 调用脚本
 
 import requests
 import base64
+import io
 import json
 import os
 import sys
 import time
 import argparse
+from pathlib import Path
 from typing import Optional, Dict, Any, List
+
+from PIL import Image
 
 class APIImage:
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, 
                  model: Optional[str] = None, api_type: Optional[str] = None):
-        # 尝试从 TOOLS.md 读取配置
+        # 优先使用显式参数和环境变量，再从当前工作区或兼容旧路径读取 TOOLS.md
         self.api_key = api_key or os.getenv("API_IMAGE_API_KEY")
         self.api_type = api_type or os.getenv("API_IMAGE_API_TYPE")
-        
-        tools_path = os.path.join(os.path.expanduser("~"), ".openclaw", "workspace", "TOOLS.md")
-        if not os.path.exists(tools_path):
-            tools_path = os.path.join(os.path.expanduser("~"), "workspace", "agent", "workspace", "TOOLS.md")
-        
-        if os.path.exists(tools_path):
-            with open(tools_path, 'r', encoding='utf-8') as f:
+        base_url = base_url or os.getenv("API_IMAGE_BASE_URL")
+        model = model or os.getenv("API_IMAGE_MODEL")
+
+        tools_path = None
+        candidates = []
+        explicit_tools_path = os.getenv("API_IMAGE_TOOLS_PATH")
+        if explicit_tools_path:
+            candidates.append(Path(explicit_tools_path).expanduser())
+        candidates.extend([
+            Path.cwd() / "TOOLS.md",
+            Path.home() / ".openclaw" / "workspace" / "TOOLS.md",
+            Path.home() / "workspace" / "agent" / "workspace" / "TOOLS.md",
+        ])
+        for candidate in candidates:
+            if candidate.is_file():
+                tools_path = candidate
+                break
+
+        if tools_path:
+            with tools_path.open('r', encoding='utf-8') as f:
                 content = f.read()
                 in_section = False
                 for line in content.split('\n'):
@@ -395,6 +412,21 @@ class APIImage:
             )
         
         return self._make_request(payload)
+
+    @staticmethod
+    def _save_image_bytes(image_bytes: bytes, output_path: str) -> str:
+        """按调用者指定的扩展名解码并保存图片，保证内容格式与文件名一致。"""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        suffix = path.suffix.lower()
+        formats = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG", ".webp": "WEBP"}
+        image_format = formats.get(suffix, "PNG")
+        with Image.open(io.BytesIO(image_bytes)) as image:
+            image.load()
+            if image_format == "JPEG" and image.mode not in ("RGB", "L"):
+                image = image.convert("RGB")
+            image.save(path, format=image_format)
+        return str(path)
     
     def save_image(self, response: Dict[str, Any], output_path: str = "output.jpg", index: int = 0) -> str:
         """从响应中保存图片，支持多种格式"""
@@ -412,22 +444,8 @@ class APIImage:
                     mime_type = image_field.get("mime_type") or image_field.get("mimeType", "image/jpeg")
                     image_data = image_field["data"]
                     
-                    # 根据 MIME 类型选择文件扩展名
-                    final_path = output_path
-                    if "png" in mime_type and not (final_path.endswith(".png") or final_path.endswith(".PNG")):
-                        if "." in final_path:
-                            final_path = final_path.rsplit('.', 1)[0] + ".png"
-                        else:
-                            final_path = final_path + ".png"
-                    elif ("jpeg" in mime_type or "jpg" in mime_type) and not (final_path.endswith(".jpg") or final_path.endswith(".jpeg")):
-                        if "." in final_path:
-                            final_path = final_path.rsplit('.', 1)[0] + ".jpg"
-                        else:
-                            final_path = final_path + ".jpg"
-                    
-                    with open(final_path, "wb") as f:
-                        f.write(base64.b64decode(image_data))
-                    print(f"图片已保存到: {final_path}")
+                    final_path = self._save_image_bytes(base64.b64decode(image_data), output_path)
+                    print(f"图片已保存到: {final_path}（源格式: {mime_type}）")
                     return final_path
             
             raise ValueError("响应中未找到图片")
@@ -448,24 +466,15 @@ class APIImage:
                     mime_type = multimodal.get("mimeType") or multimodal.get("mime_type", "image/png")
                     url = multimodal.get("url", "")
                     
-                    final_path = output_path
-                    if "png" in mime_type and not final_path.lower().endswith(".png"):
-                        final_path = (final_path.rsplit('.', 1)[0] if '.' in final_path else final_path) + ".png"
-                    elif ("jpeg" in mime_type or "jpg" in mime_type) and not final_path.lower().endswith((".jpg", ".jpeg")):
-                        final_path = (final_path.rsplit('.', 1)[0] if '.' in final_path else final_path) + ".jpg"
-                    
                     if url.startswith("data:"):
-                        # data:image/png;base64,xxxx
-                        b64_data = url.split(",", 1)[1]
-                        with open(final_path, "wb") as f:
-                            f.write(base64.b64decode(b64_data))
+                        image_bytes = base64.b64decode(url.split(",", 1)[1])
                     else:
                         r = requests.get(url, timeout=60)
                         r.raise_for_status()
-                        with open(final_path, "wb") as f:
-                            f.write(r.content)
-                    
-                    print(f"图片已保存到: {final_path}")
+                        image_bytes = r.content
+
+                    final_path = self._save_image_bytes(image_bytes, output_path)
+                    print(f"图片已保存到: {final_path}（源格式: {mime_type}）")
                     return final_path
             
             raise ValueError("响应中未找到图片 (venus_multimodal_url)")
@@ -484,33 +493,14 @@ class APIImage:
             image_url = image_data.get("url")
             
             if image_b64:
-                # base64 直接解码保存
-                final_path = output_path
-                if not (final_path.endswith(".jpg") or final_path.endswith(".jpeg")):
-                    final_path = final_path + ".jpg"
-                with open(final_path, "wb") as f:
-                    f.write(base64.b64decode(image_b64))
+                final_path = self._save_image_bytes(base64.b64decode(image_b64), output_path)
                 print(f"图片已保存到: {final_path}")
                 return final_path
             elif image_url:
-                # url 下载保存
                 print(f"正在下载图片: {image_url}")
                 r = requests.get(image_url, timeout=60)
                 r.raise_for_status()
-                
-                # 根据 URL 猜测扩展名
-                final_path = output_path
-                if ".png" in image_url.lower() and not (final_path.endswith(".png") or final_path.endswith(".PNG")):
-                    if "." in final_path:
-                        final_path = final_path.rsplit('.', 1)[0] + ".png"
-                    else:
-                        final_path = final_path + ".png"
-                elif not (final_path.endswith(".jpg") or final_path.endswith(".jpeg")):
-                    final_path = final_path + ".jpg"
-                
-                with open(final_path, "wb") as f:
-                    f.write(r.content)
-                
+                final_path = self._save_image_bytes(r.content, output_path)
                 print(f"图片已保存到: {final_path}")
                 return final_path
             

@@ -428,7 +428,7 @@ def _chroma_key(image_path: Path, key_color: tuple = (0, 0xB1, 0x40),
     from PIL import Image
 
     img = Image.open(image_path).convert("RGBA")
-    arr = np.asarray(img).astype(np.int16)
+    arr = np.asarray(img).astype(np.int32)
     r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
 
     kr, kg, kb = key_color
