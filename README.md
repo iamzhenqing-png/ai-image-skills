@@ -13,7 +13,7 @@
 |---|---|---|
 | `bg-remover` | 原子 skill | 批量抠图，输出透明 PNG |
 | `batch-image-resize` | 原子 skill | 批量改尺寸（拉伸 / 留白 / 裁切三种模式） |
-| `batch-style-transfer` | 原子 skill | 用一张参考图批量做AI 风格迁移（走 API） |
+| `batch-image-generation` | 原子 skill | 按图片目录或文本清单批量生成图片，支持图生图与风格迁移（走 API） |
 | `image-element-crop` | 原子 skill | 识别图里的目标元素，按统一规格裁剪出图 |
 | `head-shoulder-crop` | 原子 skill | 人像头肩裁剪（正方形），支持企业微信表格取图 |
 | `lucky-item-style-transfer` | 原子 skill | 幸运物贴纸化（走浏览器自动化的官方 Gemini） |
@@ -46,23 +46,35 @@ git config core.hooksPath .githooks
 
 ---
 
-## 三、配置 API Key（只有 `batch-style-transfer` 需要）
+## 三、配置 API Key（只有 `batch-image-generation` 需要）
 
-在**你当前工作区的 `TOOLS.md`** 里加上这一段（没有这个文件就新建一个）：
+在**当前工作区的 `TOOLS.md`** 中按 Provider 分区配置（没有就新建）。官方/协议通道与 Venus 通道必须分开写，运行时通过 `--provider google|openai|venus` 显式选择：
 
 ```markdown
-### API Image
-- API Key: 你的 API 密钥
-- Base URL: 你的中转站请求地址（例如 https://api.example.com/v1）
-- Model: 模型名称（例如 gemini-2.5-flash-image）
-- API Type: gemini  # 可选值: gemini / google / openai / venus
+### API Image Google
+- API Key: 你的 Google API 密钥
+- Base URL: https://generativelanguage.googleapis.com
+- Model: 你的图片模型名称
+
+### API Image OpenAI
+- API Key: 你的 OpenAI API 密钥
+- Base URL: https://api.openai.com/v1
+- Model: 你的图片模型名称
+
+### API Image Venus
+- API Key: 你的 Venus API 密钥
+- Base URL: 你的 Venus Chat Completions 请求地址
+- Model: nano-banana-2
 ```
 
-> Key 只存在你自己的工作区里，**不会**被提交上来（`.gitignore` 已排除 `TOOLS.md`）。
-> 请不要把 Key 贴进任何 skill 目录里的文件。
+旧的 `### API Image` 单一配置块仍可使用；其中 `API Type: gemini` 等同于 `google`。新配置建议按 Provider 分区，避免混用不同服务的密钥与地址。
 
-配完后在保存该 `TOOLS.md` 的工作区根目录运行连通性自检：
-`python3 ~/.codebuddy/skills/batch-style-transfer/scripts/api_image.py check`。
+> Key 只存在自己的工作区，**不会**被提交（`.gitignore` 已排除 `TOOLS.md`）。请不要把 Key 写入 skill 文件、Prompt 或日志。
+
+配完后在保存该 `TOOLS.md` 的工作区根目录运行不发起生成请求的自检：
+`python3 ~/.codebuddy/skills/batch-image-generation/scripts/api_image.py check --provider google`。
+
+完整配置与能力边界见 `batch-image-generation/references/api-and-models.md`；OpenAI 路径在当前版本仅支持纯文生图。Venus 的 `nano-banana-2` 已完成一次图片风格迁移真实批量验证，其他模型与任务组合仍需单独验证。
 
 `lucky-item-style-transfer` **不用** API Key，它走浏览器操作官方 Gemini，需要你**本人用自己的
 Google 账号手动登录一次**（登录态存在本机，别人代劳不了）。
