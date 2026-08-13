@@ -15,6 +15,7 @@
 | `batch-image-resize` | 原子 skill | 批量改尺寸（拉伸 / 留白 / 裁切三种模式） |
 | `batch-image-generation` | 原子 skill | 按图片目录或文本清单批量生成图片，支持图生图与风格迁移（走 API） |
 | `image-element-crop` | 原子 skill | 识别图里的目标元素，按统一规格裁剪出图 |
+| `visual-scale-normalizer` | 原子 skill | 按主体外框统一一批素材的视觉大小，保留原图背景 |
 | `head-shoulder-crop` | 原子 skill | 人像头肩裁剪（正方形），支持企业微信表格取图 |
 | `lucky-item-style-transfer` | 原子 skill | 幸运物贴纸化（走浏览器自动化的官方 Gemini） |
 | `workflow-*` | **工作流** | 一整条流程，会自动调用上面的原子 skill |
