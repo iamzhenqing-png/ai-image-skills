@@ -45,7 +45,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="扫描图片的透明通道并生成外框 manifest")
     parser.add_argument("--input-dir", required=True, type=Path, help="包含待处理图片的源目录（只读）")
     parser.add_argument("--output-dir", type=Path, default=None, help="输出目录，默认输入目录同级 output")
-    parser.add_argument("--recursive", action="store_true", help="递归扫描子目录")
+    recursion_group = parser.add_mutually_exclusive_group()
+    recursion_group.add_argument("--recursive", dest="recursive", action="store_true", help="递归扫描子目录（默认）")
+    recursion_group.add_argument("--no-recursive", dest="recursive", action="store_false", help="仅扫描输入目录当前层")
+    parser.set_defaults(recursive=True)
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖已有 manifest.json")
     args = parser.parse_args()
 

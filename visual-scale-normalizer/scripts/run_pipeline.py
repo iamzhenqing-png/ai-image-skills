@@ -23,7 +23,10 @@ def invoke(script: str, arguments: list[str]) -> None:
 def add_prepare_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--input-dir", required=True, type=Path, help="待处理图片目录（只读）")
     parser.add_argument("--output-dir", type=Path, default=None, help="流程产物目录，默认输入目录同级 output")
-    parser.add_argument("--recursive", action="store_true", help="递归扫描子目录")
+    recursion_group = parser.add_mutually_exclusive_group()
+    recursion_group.add_argument("--recursive", dest="recursive", action="store_true", help="递归扫描子目录（默认）")
+    recursion_group.add_argument("--no-recursive", dest="recursive", action="store_false", help="仅扫描输入目录当前层")
+    parser.set_defaults(recursive=True)
     parser.add_argument("--overwrite", action="store_true", help="覆盖 manifest/report；成品同名文件也覆盖")
 
 

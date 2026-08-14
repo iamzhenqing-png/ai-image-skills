@@ -15,7 +15,7 @@ description: 【视觉大小归一化】批量统一素材图片中主体的视�
 python3 -m pip install Pillow
 ```
 
-准备一个只包含待处理图片的输入目录。支持 PNG、JPG、JPEG、WebP、BMP、TIFF。源目录只读，所有产物写到 `--output-dir`；未指定时写入输入目录同级的 `output/`。
+准备一个待处理图片的输入目录。支持 PNG、JPG、JPEG、WebP、BMP、TIFF。默认递归扫描目录及全部子目录；如只需当前层，传入 `--no-recursive`。源目录只读，所有产物写到 `--output-dir`；未指定时写入输入目录同级的 `output/`。
 
 ## 使用流程
 
@@ -27,7 +27,7 @@ python3 scripts/run_pipeline.py prepare \
   --output-dir "/path/to/output"
 ```
 
-`prepare` 对具有真实透明变化的图片扫描 alpha 通道，直接写入像素外框；JPG 和 alpha 全不透明的图片标记为 `needs_ai_bbox`。全透明图片或打不开的文件会记录错误，不会中断整批。
+`prepare` 默认递归扫描输入目录及其子目录；如只扫描当前层，追加 `--no-recursive`。对具有真实透明变化的图片扫描 alpha 通道，直接写入像素外框；JPG 和 alpha 全不透明的图片标记为 `needs_ai_bbox`。全透明图片或打不开的文件会记录错误，不会中断整批。
 
 ### 2. 为无 alpha 图片补充 AI 外框
 
@@ -98,7 +98,7 @@ python3 scripts/run_pipeline.py run \
   --no-review
 ```
 
-无 alpha 图片仍须通过 `--ai-bboxes` 提供 AI 结果；否则会如实写入失败报告。
+默认同样会递归扫描子目录；如只扫描当前层，追加 `--no-recursive`。无 alpha 图片仍须通过 `--ai-bboxes` 提供 AI 结果；否则会如实写入失败报告。
 
 ## 输入输出规则
 
@@ -112,7 +112,7 @@ python3 scripts/run_pipeline.py run \
 
 - contract: v1
 - 入口命令: `python3 scripts/run_pipeline.py prepare|plan|execute|run ...`
-- 输入: 本地图片目录；`plan` 需要 `manifest.json`，无可用 alpha 的图片还需要 AI 生成的相对坐标 `ai_bboxes.json`；所有策略参数由命令行显式传入。
+- 输入: 本地图片目录，默认递归扫描全部子目录，可用 `--no-recursive` 仅扫描当前层；`plan` 需要 `manifest.json`，无可用 alpha 的图片还需要 AI 生成的相对坐标 `ai_bboxes.json`；所有策略参数由命令行显式传入。
 - 输出: `manifest.json`、`report.json`、`contact-sheet.png`、三级质检成品目录与 `final-report.json`。
 - 硬停点: 交互模式必须在 `plan` 完成后人工查看预演再执行 `execute`；仅显式 `run --no-review` 可跳过。
 - 幂等性: 源目录只读；已有 `manifest.json`/`report.json` 默认拒绝覆盖，使用 `--overwrite` 才覆盖；已有同名成品默认生成 `-2`、`-3` 后缀。
