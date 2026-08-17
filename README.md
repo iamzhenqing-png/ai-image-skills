@@ -1,7 +1,7 @@
 # ai-image-skills · AI 图像处理 skill 套装
 
-这是一套给AI 编程助手（CodeBuddy）用的「技能包」。装上之后，你可以直接用大白话让 AI 帮你批量处理图片：
-批量抠图、批量改尺寸、批量风格迁移、按尺寸批量裁图、头肩像裁剪。
+这是一套给 AI 编程助手（CodeBuddy）用的「技能包」。装上之后，你可以直接用大白话让 AI 帮你批量处理图片：
+批量抠图、批量改尺寸、批量生成与风格迁移、按尺寸批量裁图、头肩像裁剪，以及批量生成后统一主体视觉大小。
 
 目前仅在 **macOS + CodeBuddy** 上验证过。
 
@@ -18,8 +18,14 @@
 | `visual-scale-normalizer` | 原子 skill | 按主体外框统一一批素材的视觉大小，保留原图背景 |
 | `head-shoulder-crop` | 原子 skill | 人像头肩裁剪（正方形），支持企业微信表格取图 |
 | `lucky-item-style-transfer` | 原子 skill | 幸运物贴纸化（走浏览器自动化的官方 Gemini） |
-| `workflow-*` | **工作流** | 一整条流程，会自动调用上面的原子 skill |
+| `workflow-batch-generate-normalize` | **工作流** | 批量生成 PNG 后统一主体视觉大小，输出标准画布成品 |
 | `_registry/` | 地基 | 母版和维护脚本，日常用不到，别删 |
+
+### 最近新增与使用变更
+
+- **新增工作流：**`workflow-batch-generate-normalize` 串联 `batch-image-generation` 与 `visual-scale-normalizer`。需要提供图片目录或物品清单、已确认的完整 Prompt 与工作目录；先生成 PNG，再输出统一视觉大小的标准画布成品。详情见 [`workflow-batch-generate-normalize/使用说明.md`](workflow-batch-generate-normalize/使用说明.md)。
+- **批量图片生成：**使用 `--output <目录>` 或 `-o <目录>` 显式隔离批次产物；真实调用前必须先执行 `--dry-run` 并人工核对预览。
+- **视觉大小归一化：**对无透明背景图片提供 `--ai-bboxes` 时，先人工审核外框并传入 `--confirm-ai-bboxes`；执行成品合成前，先审核 `report.json` 与 `contact-sheet.png` 并传入 `--confirm-report`。
 
 ⚠️ **请整套一起装，不要只挑其中几个。**
 工作流会调用原子 skill，少装一个就会跑到一半失败，而系统**不会**自动帮你补装。
