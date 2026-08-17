@@ -5,9 +5,9 @@ description: >-
 activation: /batch-image-generation
 metadata:
   author: ai-image-skills
-  version: 3.0.0
+  version: 4.0.0
   created: 2026-08-10
-  last_reviewed: 2026-08-10
+  last_reviewed: 2026-08-14
   review_interval_days: 90
   dependencies:
     - name: requests
@@ -72,19 +72,22 @@ python3 scripts/batch_image_generation.py --items-file /path/to/items.txt \
 
 - `banana 2` 自动映射为 Venus 的 `nano-banana-2`；`chatgpt image 2` 自动映射为 `gpt-image-2`。
 - `openai` 当前仅支持纯文生图；含源图或共享参考图的请求会在调用前拒绝。
-- 图片目录默认输出到 `<图片目录>/output/`，保留相对路径和文件名；文本清单默认输出到 `<清单目录>/output/`，按清单顺序编号。
+- 可用 `--output <目录>` 或 `-o <目录>` 显式指定输出目录；未指定时，图片目录默认输出到 `<图片目录>/output/`，保留相对路径和文件名，文本清单默认输出到 `<清单目录>/output/`，按清单顺序编号。
 - `--size WIDTHxHEIGHT` 会在下载后由 Pillow 等比例缩放、居中补边为精确 PNG 尺寸，不拉伸图像。
 - 单项失败只记录在批次汇总，其他项继续执行；重跑会覆盖同路径输出，并再次消耗 Provider 额度。
 - 不回显密钥、完整请求负载或图片编码。
 
 ## 对外契约
 
-- contract: v3
-- 输入：一个本地图片目录或一份物品文本清单；可选一张共享参考图；必填用户确认的完整 Prompt。
+- contract: v4
+- 入口命令：`python3 scripts/batch_image_generation.py <图片目录> | --items-file <清单> ...`
+- 输入：一个本地图片目录或一份物品文本清单（二选一）；可选一张共享参考图；必填用户确认的完整 `--prompt`。支持可选 `--provider`、`--model`、`--resolution`、`--size` 与 `--output`/`-o`。
 - 路由：按输入类型与 `--ref` 自动路由四类批量图片任务。
-- 输出：PNG；目录输入保留相对路径和文件名，清单输入按三位序号命名；可通过 `--size` 固定像素规格。
+- 输出：PNG；通过 `--output <目录>` 或 `-o <目录>` 显式指定输出目录，未指定时使用输入目录或清单同级的 `output/`；目录输入保留相对路径和文件名，清单输入按三位序号命名；可通过 `--size` 固定像素规格。
+- 硬停点：真实调用前必须执行 `--dry-run`，人工核对任务类型、条目数量、输出目录与 Prompt 预览后才可继续。
 - 失败语义：单项失败不中断批次，进程以汇总报告成功与失败数量。
 - 幂等性：同路径输出会被覆盖；每次真实运行都会重新请求 Provider 并可能产生费用。
-- 安全：Prompt、日志和文档中不得写入密钥；真实调用前必须执行 `--dry-run`。
+- 依赖：Python 3.10+、`requests`、`Pillow`；已配置的 Provider 及其访问凭据。
+- 安全：Prompt、日志和文档中不得写入密钥。
 
 依赖安装、Provider 配置和完整示例见 [README](README.md)；模型能力与验证状态见 [API 与模型参考](references/api-and-models.md)。

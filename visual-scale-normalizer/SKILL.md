@@ -43,10 +43,11 @@ python3 scripts/run_pipeline.py plan \
   --target-fill 0.82 \
   --transition-steepness 0.65 \
   --max-upscale 1.0 \
-  --ai-bboxes "/path/to/output/ai_bboxes.json"
+  --ai-bboxes "/path/to/output/ai_bboxes.json" \
+  --confirm-ai-bboxes
 ```
 
-查看 `report.json` 与 `contact-sheet.png`。默认在此硬停：根据报告排查主体识别错误、裁歪和画质受限项；如需调整，修改边距或显式策略参数后重跑 `plan`。大小是否统一以 `report.json` 的数字为准，不以肉眼联系表为准。
+生成 `ai_bboxes.json` 后先展示每个外框、等待用户明确确认；只有确认后才允许传入 `--confirm-ai-bboxes` 进入 `plan`。查看 `report.json` 与 `contact-sheet.png`。默认在此硬停：根据报告排查主体识别错误、裁歪和画质受限项；如需调整，修改边距或显式策略参数后重跑 `plan`。大小是否统一以 `report.json` 的数字为准，不以肉眼联系表为准。
 
 参数说明：
 
@@ -64,10 +65,11 @@ python3 scripts/run_pipeline.py plan \
 
 ```bash
 python3 scripts/run_pipeline.py execute \
-  --output-dir "/path/to/output"
+  --output-dir "/path/to/output" \
+  --confirm-report
 ```
 
-按确认后的 `report.json` 直接合成，不重新计算缩放倍率。每张图会将整张原图缩放后粘贴到透明 PNG 新画布；原图内已有背景保持原样。输出结构：
+只有在人工审核本轮 `report.json` 与 `contact-sheet.png` 后，才允许传入 `--confirm-report`。按确认后的 `report.json` 直接合成，不重新计算缩放倍率。每张图会将整张原图缩放后粘贴到透明 PNG 新画布；原图内已有背景保持原样。输出结构：
 
 ```text
 output/
@@ -98,7 +100,7 @@ python3 scripts/run_pipeline.py run \
   --no-review
 ```
 
-默认同样会递归扫描子目录；如只扫描当前层，追加 `--no-recursive`。无 alpha 图片仍须通过 `--ai-bboxes` 提供 AI 结果；否则会如实写入失败报告。
+默认同样会递归扫描子目录；如只扫描当前层，追加 `--no-recursive`。无 alpha 图片必须通过 `--ai-bboxes` 提供 AI 结果；提供时还必须显式传入 `--confirm-ai-bboxes`，否则拒绝继续。未提供 AI 外框的图片会如实写入失败报告。
 
 ## 输入输出规则
 
@@ -110,11 +112,11 @@ python3 scripts/run_pipeline.py run \
 
 ## 对外契约
 
-- contract: v1
+- contract: v2
 - 入口命令: `python3 scripts/run_pipeline.py prepare|plan|execute|run ...`
 - 输入: 本地图片目录，默认递归扫描全部子目录，可用 `--no-recursive` 仅扫描当前层；`plan` 需要 `manifest.json`，无可用 alpha 的图片还需要 AI 生成的相对坐标 `ai_bboxes.json`；所有策略参数由命令行显式传入。
 - 输出: `manifest.json`、`report.json`、`contact-sheet.png`、三级质检成品目录与 `final-report.json`。
-- 硬停点: 交互模式必须在 `plan` 完成后人工查看预演再执行 `execute`；仅显式 `run --no-review` 可跳过。
+- 硬停点: 使用 `--ai-bboxes` 时，`plan` 必须追加 `--confirm-ai-bboxes`；交互式 `execute` 必须追加 `--confirm-report`，确认已审核预演。仅显式 `run --no-review` 可跳过预演审核，但提供 AI 外框时仍必须追加 `--confirm-ai-bboxes`。
 - 幂等性: 源目录只读；已有 `manifest.json`/`report.json` 默认拒绝覆盖，使用 `--overwrite` 才覆盖；已有同名成品默认生成 `-2`、`-3` 后缀。
 - 依赖: Python 3、Pillow；无网络调用、无背景移除依赖。
 

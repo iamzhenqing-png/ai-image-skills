@@ -35,7 +35,7 @@ python3 scripts/batch_image_generation.py --items-file /path/to/items.txt \
   --dry-run
 ```
 
-确认预览正确后，移除 `--dry-run` 执行真实生成。图片目录输出至 `<图片目录>/output/`，并保留相对路径与文件名；文本清单输出至 `<清单目录>/output/`，按清单顺序编号。
+确认预览正确后，移除 `--dry-run` 执行真实生成。使用 `--output <目录>` 或 `-o <目录>` 可显式指定输出目录；未指定时，图片目录输出至 `<图片目录>/output/` 并保留相对路径与文件名，文本清单输出至 `<清单目录>/output/` 并按清单顺序编号。
 
 ## Prompt 占位符
 

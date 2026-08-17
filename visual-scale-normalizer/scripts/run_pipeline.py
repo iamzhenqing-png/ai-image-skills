@@ -38,11 +38,14 @@ def add_plan_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--transition-steepness", required=True, type=float, help="显式指定、待真实素材校准的连续过渡陡峭度")
     parser.add_argument("--max-upscale", required=True, type=float, help="显式指定、待真实素材校准的最大放大倍率")
     parser.add_argument("--ai-bboxes", type=Path, default=None, help="AI 识别无 alpha 图片后输出的 ai_bboxes.json")
+    parser.add_argument("--confirm-ai-bboxes", action="store_true", help="确认已人工审核本轮 AI 外框；使用 --ai-bboxes 时必填")
     parser.add_argument("--no-review", action="store_true", help="声明已跳过人工预演复核；只供非交互连续 run 使用")
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖已有 report.json")
 
 
 def plan_command(args: argparse.Namespace, announce_stop: bool = True) -> None:
+    if args.ai_bboxes and not args.confirm_ai_bboxes:
+        raise SystemExit("检测到 --ai-bboxes。请先人工审核外框并显式传入 --confirm-ai-bboxes；不得跳过此确认。")
     output_dir = args.output_dir.expanduser().resolve()
     command = ["--manifest", str(output_dir / "manifest.json"), "--output-dir", str(output_dir), "--canvas-size", args.canvas_size,
                "--margin", args.margin, "--target-fill", str(args.target_fill), "--transition-steepness", str(args.transition_steepness),
@@ -65,6 +68,7 @@ def main() -> int:
     add_plan_arguments(plan_parser)
     execute_parser = subparsers.add_parser("execute", help="按确认的 report.json 合成成品")
     execute_parser.add_argument("--output-dir", required=True, type=Path, help="包含已确认 report.json 的产物目录")
+    execute_parser.add_argument("--confirm-report", action="store_true", required=True, help="确认已人工审核本轮 report.json 与 contact-sheet.png")
     execute_parser.add_argument("--overwrite", action="store_true", help="覆盖同名成品；默认追加 -2、-3 后缀")
     run_parser = subparsers.add_parser("run", help="连续运行 prepare、plan、execute（仅非交互模式）")
     add_prepare_arguments(run_parser)
@@ -74,6 +78,7 @@ def main() -> int:
     run_parser.add_argument("--transition-steepness", required=True, type=float, help="显式指定、待真实素材校准的连续过渡陡峭度")
     run_parser.add_argument("--max-upscale", required=True, type=float, help="显式指定、待真实素材校准的最大放大倍率")
     run_parser.add_argument("--ai-bboxes", type=Path, default=None, help="AI 识别无 alpha 图片后输出的 ai_bboxes.json")
+    run_parser.add_argument("--confirm-ai-bboxes", action="store_true", help="确认已人工审核本轮 AI 外框；使用 --ai-bboxes 时必填")
     run_parser.add_argument("--no-review", action="store_true", required=True, help="确认连续运行时跳过人工 Pass1 复核")
     args = parser.parse_args()
 

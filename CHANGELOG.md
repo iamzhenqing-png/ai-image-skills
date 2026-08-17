@@ -22,6 +22,13 @@
 
 <!-- 新的变更加在这行下面，最新的放最上面 -->
 
+## 2026-08-14 · batch-image-generation 契约 v3 → v4
+
+- 变了什么：对外契约正式新增 `--output <目录>` / `-o <目录>` 输出目录参数说明，并补齐稳定入口、硬停点和依赖字段。
+- 为什么变：脚本已实现该输出参数，但此前 SKILL.md 与 README 未对调用方声明，导致工作流无法按目录隔离规则安全编排。
+- 受影响工作流：（暂无既有工作流依赖；本次新增 `workflow-batch-generate-normalize` 使用该契约）
+- 使用者要做什么：需要隔离批次产物时显式传入 `--output` 或 `-o`；未传时原有默认输出行为不变。
+
 ## 2026-08-10 · batch-image-generation 契约 v2 → v3
 
 - 变了什么：Skill、目录、脚本入口和调用名从 `batch-style-transfer` 迁移为 `batch-image-generation`；调用入口改为 `/batch-image-generation`，主脚本改为 `scripts/batch_image_generation.py`。
