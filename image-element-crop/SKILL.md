@@ -1,6 +1,6 @@
 ---
 name: image-element-crop
-description: 识别图片中的目标元素（画面最显著主体，或用户按描述指定的局部元素），按目标宽高像素与可调节的 padding 留白裁剪输出统一规格成品图，支持“保留完整元素”或“铺满画面”两种裁剪策略，并提供裁剪几何预览及三级质量分流。支持两种输入来源：企业微信文档/腾讯文档在线表格（按图片列/命名列/可选描述列批量取图，支持行范围筛选）、本地文件夹（保留原文件名，可选descriptions映射文件指定局部元素）。当用户需要“批量裁图”“按尺寸裁剪产品图/道具图”“从表格批量下载图片并裁剪”“提取图片里某个局部元素并出图”时使用此skill。
+description: 识别图片中的目标元素（画面最显著主体，或用户按描述指定的局部元素），按目标宽高像素与可调节的 padding 留白裁剪输出统一规格成品图，支持“保留完整元素”或“铺满画面”两种裁剪策略，并提供裁剪几何预览及三级质量分流。支持两种输入来源：企业微信文档/腾讯文档在线表格（按图片列/命名列/可选描述列批量取图，支持行范围筛选）、本地文件夹（保留原文件名，可选 descriptions 映射文件指定局部元素）。当用户需要“批量裁图”“按尺寸裁剪产品图/道具图”“从表格批量下载图片并裁剪”“提取图片里某个局部元素并出图”时使用此 skill。必填项缺失时先原样输出参数申领单，不逐项追问、不猜测补写。
 ---
 
 # Image Element Crop
@@ -45,6 +45,18 @@ python3 scripts/run_pipeline.py finalize \
 | `--rows` | 行范围筛选（1-based），仅表格模式 | `--rows 10-50` |
 | `--review` | 人工校验模式，**默认关闭** | `--review` |
 | `--overwrite` | 覆盖已有输出文件，不追加 `-2/-3` 后缀 | `--overwrite` |
+
+## 缺参数时的响应协议（硬停点）
+
+只要「输入来源」「输入路径或表格链接」「目标尺寸」「输出目录」任一必填项缺失、为空、仍是 `❓ 待填写`，本地输入路径不存在，或腾讯文档表格未明确提供图片列和命名列：
+
+1. 立即停止，不得调用 `scripts/run_pipeline.py`；`prepare` 与 `finalize` 均不得执行。
+2. 原样输出 `references/prompt-templates/参数申领单.txt` 全文，一次性给出全部待填项。不得逐项追问、不得删减选项、不得改写措辞或调整分区顺序。
+3. 不得推断或代填输入来源、输入路径、表格链接、目标尺寸或输出目录。
+4. 用户回填后逐项校验。必填项仍缺、输入来源无效、本地路径不存在、表格链接格式明显无效，或腾讯文档表格未填写图片列和命名列时，再次输出申领单并指名缺哪几项，不得编造值继续执行。
+5. 选填项按「首值即默认」解析：用户未删改多选项行时取第一个值；说明区文字一律忽略。
+
+读取该文件仅用于向用户展示待填项，不影响步骤 2（bbox 识别）必须由 AI 直接读图完成的既有约定。
 
 ## Workflow（三步）
 
@@ -130,10 +142,11 @@ L4 成品文件复验（`crop_by_bbox.py` 保存后重新打开校验）。
 ### references/
 - `bbox-detection-guide.md` — bbox 识别策略与判断标准
 - `crop-tightness-explained.md` — padding 模型原理 + contain/cover 差异
-- `prompt-templates/` — 标准调用 Prompt 模板，按场景可复制粘贴
-  - `README.md` — 模板使用说明
-  - `table-batch.md` — 企业微信/腾讯文档表格批量模式
-  - `local-folder.md` — 本地文件夹批量模式
+- `prompt-templates/` — 参数申领单与场景参考示例
+  - `参数申领单.txt` — 缺少必填项时原样输出的唯一待填模板
+  - `README.md` — 模板与示例使用说明
+  - `table-batch.md` — 企业微信/腾讯文档表格批量模式示例
+  - `local-folder.md` — 本地文件夹批量模式示例
 - `wecom-sheet-read.md` / `tencentdocs-sheet-read.md` — 表格读取步骤
 
 ## Dependencies
@@ -146,15 +159,14 @@ pip install Pillow httpx   # httpx 可选，未安装时自动降级为标准库
 
 ## 对外契约（编排链依赖，改动需通知）
 
-- contract: v1（人工约定，非自动校验，仅供编排层/开发者对照）
+- contract: v2（人工约定，非自动校验，仅供编排层/开发者对照）
 - 入口命令：`scripts/run_pipeline.py`（子命令 `prepare` / `finalize`，命令名稳定）
 - 输入：`prepare --mode local --input-dir <目录>`（本地文件夹）或
   `--mode table --table-input/--manifest`（在线表格）
 - 输出：`finalize --output-dir <目录>`；非破坏性，三级子目录
   （`completed/attention/failed`），同名自动加 `-2/-3`（或 `--overwrite`）
-- 硬停点：**有**——步骤2（bbox 识别）必须由 AI 直接读图完成，脚本本身不产出
-  bbox；`finalize` 若加 `--review` 且预览报告存在 attention/failed 条目会暂停
-  等待人工确认
+- 硬停点：**有**——必填项（输入来源、输入路径/表格链接、目标尺寸、输出目录）缺失时，或腾讯文档表格未填写图片列与命名列时，先输出参数申领单并停止，禁止调用脚本；步骤2（bbox 识别）必须由 AI 直接读图完成，脚本本身不产出 bbox；`finalize` 若加 `--review` 且预览报告存在 attention/failed 条目会暂停等待人工确认
+- 待填参数模板：`references/prompt-templates/参数申领单.txt`
 - 幂等性：**不跳过已有产物**——同名输出已存在时默认追加 `-2`/`-3` 生成新文件，
   传 `--overwrite` 才覆盖。`prepare` 下载阶段支持断点续跑
 - 依赖：`Pillow httpx`；模式一涉及企业微信/腾讯文档时依赖对应 skill 的 MCP
