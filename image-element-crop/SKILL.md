@@ -14,20 +14,29 @@ description: 识别图片中的目标元素（画面最显著主体，或用户�
 - **识别（由你/CodeBuddy 完成）**：直接读图判断目标元素边界框 `bbox`，产出 `bboxes.json`。
 - **裁剪（由脚本完成）**：`scripts/geometry.py` + `scripts/crop_by_bbox.py` 做纯数学裁剪，确定性、可复现。
 
+## 激活后的第一动作（最高优先级）
+
+Skill 一旦被激活，先且只根据**当前用户消息**校验必填项；在确认全部必填项有效前，不得列目录、读取输入图片、读取脚本/依赖、寻找测试素材或调用任何命令。
+
+- 单独提供「输入：<路径>」只满足输入路径，仍缺目标尺寸和输出目录，必须立即输出申领单；不得据此推断尺寸、输出目录或开始 `prepare`。
+- 「测试」「试一下」「demo」「帮我验证」等措辞不构成自测授权；必填项不全时，仍必须输出申领单，禁止自行寻找本机样本、生成示例数据或运行脚本。
+- 不得沿用上一个 task、历史消息或其他对话中曾填写的参数；只有当前消息明确要求复用且完整给出/引用的参数才可使用。
+- 仅可使用当前激活的 skill 目录；不得读取、选择或执行 `.ai-image-skills-backups`、`.git`、旧副本或历史备份中的任何文件。
+
 ## 快速开始
 
-> 以下命令里的 `scripts/` 是**相对本 skill 所在目录**的路径。实际执行前，请把它换成本 skill 目录的真实绝对路径。
+> 以下命令仅展示参数写法，尖括号内容必须替换为用户在当前消息中明确确认的真实值；它们不是默认值，也不得在缺参时拿来执行。`scripts/` 是**相对本 skill 所在目录**的路径，实际执行前请替换为本 skill 目录的真实绝对路径。
 
 ```bash
 # 1) 准备 manifest（模式二·本地文件夹，最简单）
-python3 scripts/run_pipeline.py prepare --mode local --input-dir ./photos --output manifest_local.json
+python3 scripts/run_pipeline.py prepare --mode local --input-dir "<本地图片目录>" --output "<manifest 路径>"
 
 # 2) 你（AI）逐批读图，参考 references/bbox-detection-guide.md，写出 bboxes.json
 
 # 3) 一条命令跑完“几何预览 + 正式裁剪”，默认无人值守
 python3 scripts/run_pipeline.py finalize \
-  --manifest manifest_local.json --bboxes bboxes.json \
-  --output-dir ./output --size 1200x900 --fit contain --padding 5
+  --manifest "<manifest 路径>" --bboxes "<bboxes 路径>" \
+  --output-dir "<输出目录>" --size "<宽>x<高>" --fit contain --padding 5
 ```
 
 模式一（表格）先用 `prepare --mode table --table-input table.md ...` 解析+下载，
@@ -51,10 +60,11 @@ python3 scripts/run_pipeline.py finalize \
 只要「输入来源」「输入路径或表格链接」「目标尺寸」「输出目录」任一必填项缺失、为空、仍是 `❓ 待填写`，本地输入路径不存在，或腾讯文档表格未明确提供图片列和命名列：
 
 1. 立即停止，不得调用 `scripts/run_pipeline.py`；`prepare` 与 `finalize` 均不得执行。
-2. 原样输出 `references/prompt-templates/参数申领单.txt` 全文，一次性给出全部待填项。不得逐项追问、不得删减选项、不得改写措辞或调整分区顺序。
+2. 用三个反引号的代码块包裹后原样输出 `references/prompt-templates/参数申领单.txt` 全文，保留原始换行和空格，不得压缩成单段连续文本；一次性给出全部待填项。不得逐项追问、不得删减选项、不得改写措辞或调整分区顺序。
 3. 不得推断或代填输入来源、输入路径、表格链接、目标尺寸或输出目录。
 4. 用户回填后逐项校验。必填项仍缺、输入来源无效、本地路径不存在、表格链接格式明显无效，或腾讯文档表格未填写图片列和命名列时，再次输出申领单并指名缺哪几项，不得编造值继续执行。
 5. 选填项按「首值即默认」解析：用户未删改多选项行时取第一个值；说明区文字一律忽略。
+6. 上述校验和申领单输出优先于任何「快速开始」、示例、测试、自测、任务续接或目录探查指令；不得将这些内容解释为执行授权。
 
 读取该文件仅用于向用户展示待填项，不影响步骤 2（bbox 识别）必须由 AI 直接读图完成的既有约定。
 
@@ -159,13 +169,13 @@ pip install Pillow httpx   # httpx 可选，未安装时自动降级为标准库
 
 ## 对外契约（编排链依赖，改动需通知）
 
-- contract: v2（人工约定，非自动校验，仅供编排层/开发者对照）
+- contract: v3（人工约定，非自动校验，仅供编排层/开发者对照）
 - 入口命令：`scripts/run_pipeline.py`（子命令 `prepare` / `finalize`，命令名稳定）
 - 输入：`prepare --mode local --input-dir <目录>`（本地文件夹）或
   `--mode table --table-input/--manifest`（在线表格）
 - 输出：`finalize --output-dir <目录>`；非破坏性，三级子目录
   （`completed/attention/failed`），同名自动加 `-2/-3`（或 `--overwrite`）
-- 硬停点：**有**——必填项（输入来源、输入路径/表格链接、目标尺寸、输出目录）缺失时，或腾讯文档表格未填写图片列与命名列时，先输出参数申领单并停止，禁止调用脚本；步骤2（bbox 识别）必须由 AI 直接读图完成，脚本本身不产出 bbox；`finalize` 若加 `--review` 且预览报告存在 attention/failed 条目会暂停等待人工确认
+- 硬停点：**有**——先且只根据当前用户消息校验；必填项（输入来源、输入路径/表格链接、目标尺寸、输出目录）缺失时，或腾讯文档表格未填写图片列与命名列时，先输出参数申领单并停止，禁止调用脚本、寻找自测素材、沿用历史 task 或使用备份副本；步骤2（bbox 识别）必须由 AI 直接读图完成，脚本本身不产出 bbox；`finalize` 若加 `--review` 且预览报告存在 attention/failed 条目会暂停等待人工确认
 - 待填参数模板：`references/prompt-templates/参数申领单.txt`
 - 幂等性：**不跳过已有产物**——同名输出已存在时默认追加 `-2`/`-3` 生成新文件，
   传 `--overwrite` 才覆盖。`prepare` 下载阶段支持断点续跑
