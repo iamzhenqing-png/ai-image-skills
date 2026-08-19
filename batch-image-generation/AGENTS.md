@@ -8,6 +8,7 @@
 
 1. 先阅读 `SKILL.md` 并遵守其中的 Prompt、路由、费用和安全契约。
 2. 只接受用户在对话中提交的完整 Prompt；不得读取、套用、补写、拼接或改写模板及目录旁文本。
-3. 必须先执行 `scripts/batch_image_generation.py` 的 `--dry-run`；核对无误后才执行真实生成。
-4. 使用 `README.md` 安装依赖和配置 Provider；模型边界与验证状态以 `references/api-and-models.md` 为准。
-5. 不回显密钥、完整请求负载或图片编码。
+3. 输入路径或 Prompt 缺失时，先原样输出 `prompts/参数申领单.txt` 全文并停止；禁止逐项追问、禁止猜测或代写任何必填项。
+4. 必须先执行 `scripts/batch_image_generation.py` 的 `--dry-run`；核对无误后才执行真实生成。
+5. 使用 `README.md` 安装依赖和配置 Provider；模型边界与验证状态以 `references/api-and-models.md` 为准。
+6. 不回显密钥、完整请求负载或图片编码。

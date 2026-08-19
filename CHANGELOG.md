@@ -22,6 +22,13 @@
 
 <!-- 新的变更加在这行下面，最新的放最上面 -->
 
+## 2026-08-19 · batch-image-generation 契约 v4 → v5
+
+- 变了什么：新增硬停点——输入路径或 Prompt 缺失时，必须先原样输出 `prompts/参数申领单.txt` 全文并停止，禁止逐项追问、禁止调用脚本、禁止代填或猜测 Prompt。
+- 为什么变：修复必填项缺失时 agent 会自行编造 Prompt 或逐条追问的体验问题，统一为一次性完整申领单。
+- 受影响工作流：`workflow-batch-generate-normalize`
+- 使用者要做什么：直接调用时若必填项缺失，会先收到 `prompts/参数申领单.txt` 全文用于一次性填写；`workflow-batch-generate-normalize` 已有等价的「四条铁律」模板，行为不变，无需调整。
+
 ## 2026-08-17 · visual-scale-normalizer 契约 v1 → v2
 
 - 变了什么：无 alpha 图片传入 `--ai-bboxes` 后，`plan` 必须显式传入 `--confirm-ai-bboxes`；交互式 `execute` 必须显式传入 `--confirm-report`。

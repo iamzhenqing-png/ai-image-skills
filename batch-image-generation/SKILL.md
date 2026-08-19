@@ -1,13 +1,13 @@
 ---
 name: batch-image-generation
 description: >-
-  用户手动调用 `/batch-image-generation` 后，基于本地图片目录或物品文本清单批量生成图片；可选一张共享参考图，自动路由为纯文生图、参考图文生图、图生图或图片风格迁移。用户必须在对话中提供已确认的完整 Prompt；本技能不会读取模板、目录旁文本或默认 Prompt，也不会补写、拼接或改写 Prompt。
+  用户手动调用 `/batch-image-generation` 后，基于本地图片目录或物品文本清单批量生成图片；可选一张共享参考图，自动路由为纯文生图、参考图文生图、图生图或图片风格迁移。用户必须在对话中提供已确认的完整 Prompt；本技能不会读取模板、目录旁文本或默认 Prompt，也不会补写、拼接或改写 Prompt。必填项缺失时先原样输出参数申领单，不逐项追问、不猜测补写。
 activation: /batch-image-generation
 metadata:
   author: ai-image-skills
-  version: 4.0.0
+  version: 5.0.0
   created: 2026-08-10
-  last_reviewed: 2026-08-14
+  last_reviewed: 2026-08-19
   review_interval_days: 90
   dependencies:
     - name: requests
@@ -30,11 +30,23 @@ provenance:
 - 参考图通过 `--ref` 提供；它对全批次共用。
 - 用户必须在对话中提交最终 Prompt；将其原样传给 `--prompt`，不得自动读取 `prompts/prompt template.txt`、输入目录旁文件或内置默认 Prompt，也不得补写、拼接或改写。
 - 用户可自行参考 `prompts/prompt template.txt`；它不是执行输入。
-- Prompt 未提供时，要求用户补充后再执行。仅逐项替换 `{{物品名称}}` 与 `{{输出规格}}`：前者来自源图文件名（不含扩展名）或文本清单条目，后者来自 `--size`。
+- Prompt 或输入路径未提供时，遵循下方「缺参数时的响应协议（硬停点）」。仅逐项替换 `{{物品名称}}` 与 `{{输出规格}}`：前者来自源图文件名（不含扩展名）或文本清单条目，后者来自 `--size`。
 - 源图文件名必须能准确描述目标物品，例如 `红色马克杯.png`；不要使用 `IMG_0042.png` 等无语义文件名。
 - `--resolution` 默认 `2K`；未提供 `--size` 时保留远端生成尺寸。
 
 用户至少需要提供：输入路径、完整 Prompt；可选提供参考图、Provider、模型、远端分辨率和最终尺寸。
+
+## 缺参数时的响应协议（硬停点）
+
+只要「输入路径」或「Prompt」任一必填项缺失、为空、仍是 `❓ 待填写`，或输入路径不存在：
+
+1. 立即停止，不得调用 `scripts/batch_image_generation.py`，`--dry-run` 也不得执行。
+2. 原样输出 `prompts/参数申领单.txt` 全文，一次性给出全部待填项。不得逐项追问、不得删减选项、不得改写措辞或调整分区顺序。
+3. 不得推断、补写或示范性填入 Prompt、输入路径、参考图；申领单中除 Prompt 候选行之外的任何文字，都不得作为 `--prompt` 值使用；即便使用候选 Prompt，也必须等用户明确确认（原样保留该行或回复确认）后才可执行。
+4. 用户回填后逐项校验。必填项仍缺或明显无效时，再次输出申领单并指名缺哪几项，不得编造值继续执行。
+5. 选填项按「首值即默认」解析：用户未删改多选项行时取第一个值；说明区文字一律忽略。
+
+读取 `prompts/参数申领单.txt` 仅用于向用户展示待填项，与「不得读取模板作为 Prompt」的约定不冲突。
 
 ## 任务自动判断
 
@@ -79,15 +91,16 @@ python3 scripts/batch_image_generation.py --items-file /path/to/items.txt \
 
 ## 对外契约
 
-- contract: v4
+- contract: v5
 - 入口命令：`python3 scripts/batch_image_generation.py <图片目录> | --items-file <清单> ...`
 - 输入：一个本地图片目录或一份物品文本清单（二选一）；可选一张共享参考图；必填用户确认的完整 `--prompt`。支持可选 `--provider`、`--model`、`--resolution`、`--size` 与 `--output`/`-o`。
 - 路由：按输入类型与 `--ref` 自动路由四类批量图片任务。
 - 输出：PNG；通过 `--output <目录>` 或 `-o <目录>` 显式指定输出目录，未指定时使用输入目录或清单同级的 `output/`；目录输入保留相对路径和文件名，清单输入按三位序号命名；可通过 `--size` 固定像素规格。
-- 硬停点：真实调用前必须执行 `--dry-run`，人工核对任务类型、条目数量、输出目录与 Prompt 预览后才可继续。
+- 硬停点：必填项（输入路径、Prompt）缺失时先输出参数申领单并停止，禁止调用脚本；参数齐全后，真实调用前必须执行 `--dry-run`，人工核对任务类型、条目数量、输出目录与 Prompt 预览后才可继续。
 - 失败语义：单项失败不中断批次，进程以汇总报告成功与失败数量。
 - 幂等性：同路径输出会被覆盖；每次真实运行都会重新请求 Provider 并可能产生费用。
 - 依赖：Python 3.10+、`requests`、`Pillow`；已配置的 Provider 及其访问凭据。
 - 安全：Prompt、日志和文档中不得写入密钥。
+- 待填参数模板：`prompts/参数申领单.txt`。
 
 依赖安装、Provider 配置和完整示例见 [README](README.md)；模型能力与验证状态见 [API 与模型参考](references/api-and-models.md)。

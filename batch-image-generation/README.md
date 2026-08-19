@@ -18,6 +18,8 @@ python3 -m pip install -r requirements.txt
 
 ## 使用
 
+若未提供输入路径或完整 Prompt，会先原样收到 `prompts/参数申领单.txt` 全文，一次性填写即可，不会被逐项追问、也不会被自动代填。
+
 完整行为以 [SKILL.md](SKILL.md) 为准。真实调用前必须先执行 `--dry-run`：
 
 ```bash
